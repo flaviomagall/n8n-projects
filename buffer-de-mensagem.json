@@ -1,0 +1,358 @@
+{
+  "createdAt": "2025-04-23T01:07:30.809Z",
+  "updatedAt": "2025-04-23T12:57:10.518Z",
+  "id": "6GA602aMjpbetKd3",
+  "name": "Buffer de mensagem",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "buffer-message",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1480,
+        200
+      ],
+      "id": "9074013a-516c-4be4-898f-064c33d44214",
+      "name": "Webhook",
+      "webhookId": "50ce3d68-e49a-445f-b0c8-a02c46dcc5d0",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "au2yX0WV0jieIFNV",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "=1"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -500,
+        420
+      ],
+      "id": "322f2201-a78a-4914-9f8b-2771ee7b5331",
+      "name": "Wait",
+      "webhookId": "f5e0a387-6fb1-4196-865a-547c4f2b7caf"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        20
+      ],
+      "id": "d271e9b0-a62f-4f8f-a06e-6f3caecc1c36",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "content": "# Buffer de mensagem",
+        "height": 680,
+        "width": 1740
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1580,
+        -20
+      ],
+      "id": "2c93da88-b36a-463e-b946-84ee191a9dfc",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $json.body.phoneNumber }}",
+        "messageData": "={{ JSON.stringify($json.body.message) }}",
+        "tail": true
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        200
+      ],
+      "id": "29f1fb68-1772-4bde-a7c8-00c7670e4960",
+      "name": "salva_mensagem",
+      "credentials": {
+        "redis": {
+          "id": "OT6LVjwUbDeIBaVb",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "messages",
+        "key": "={{ $('Webhook').item.json.body.phoneNumber }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -980,
+        200
+      ],
+      "id": "35fd9442-dfb0-48e0-ba60-1b85fe5b1ed4",
+      "name": "busca_mensagens",
+      "credentials": {
+        "redis": {
+          "id": "OT6LVjwUbDeIBaVb",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook').item.json.body.message.id }}",
+                    "rightValue": "={{ JSON.parse($json.messages.first()).id }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "40bd91d1-cc6e-4a9c-aaed-e591ef230784"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sending_message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b2b709a6-455e-4cc7-8b9e-8de89539baf8",
+                    "leftValue": "={{ JSON.parse($json.messages.last()).timeStamp }}",
+                    "rightValue": "={{ $now.minus(1, 'seconds') }}",
+                    "operator": {
+                      "type": "dateTime",
+                      "operation": "before"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "send_message"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "wait"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -780,
+        200
+      ],
+      "id": "f22d398a-863d-42ac-a76a-a7cf69d4dae9",
+      "name": "verifica_decisao"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('Webhook').item.json.body.phoneNumber }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        200
+      ],
+      "id": "55e7d522-d9e9-4f85-af42-5b99181750ec",
+      "name": "deleta_mensagens",
+      "credentials": {
+        "redis": {
+          "id": "OT6LVjwUbDeIBaVb",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1df59ba-e97c-4b77-bf62-fa7e1501e64b",
+              "name": "message",
+              "value": "={{ $json.messages.map(value => JSON.parse(value).message).join(\"\\n\") }}",
+              "type": "string"
+            },
+            {
+              "id": "3945d7eb-f5a3-4170-86a7-ebd71e80059c",
+              "name": "phoneNumber",
+              "value": "={{ $('Webhook').item.json.body.phoneNumber }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -280,
+        200
+      ],
+      "id": "b69d1109-415d-4814-9a0e-c8f25a8f55d1",
+      "name": "Normaliza_saida"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        200
+      ],
+      "id": "330d260f-bf2c-4ffd-b68e-66bd1a1b9e54",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "salva_mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "busca_mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "salva_mensagem": {
+      "main": [
+        [
+          {
+            "node": "busca_mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "busca_mensagens": {
+      "main": [
+        [
+          {
+            "node": "verifica_decisao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verifica_decisao": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "deleta_mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deleta_mensagens": {
+      "main": [
+        [
+          {
+            "node": "Normaliza_saida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza_saida": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "bc83fc50-b6f4-44ca-a779-579c7cae3b63",
+  "triggerCount": 1,
+  "tags": [
+    {
+      "createdAt": "2025-04-23T02:20:14.529Z",
+      "updatedAt": "2025-04-23T02:20:14.529Z",
+      "id": "fBpjBjHGwcyWSGj9",
+      "name": "UTILS"
+    }
+  ]
+}
